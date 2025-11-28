@@ -1,18 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
-// AUTH
-import '../services/auth_service.dart';
+// Auth
 import '../controllers/auth_controller.dart';
+import '../services/auth_service.dart';
 import '../views/auth/login_view.dart';
 import '../views/auth/register_view.dart';
 
-import '../views/home_view.dart'; 
-
+// Home
+import '../views/home_view.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
-  // 🔹 Service et contrôleur Auth
   final authService = AuthService();
   final authController = AuthController(authService);
 
@@ -27,14 +31,14 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: "GestionBudgetaire",
       debugShowCheckedModeBanner: false,
+      title: "GestionBudgetaire",
       initialRoute: "/login",
       routes: {
         "/login": (context) => LoginView(controller: authController),
         "/register": (context) => RegisterView(controller: authController),
-        "/home": (context) => const HomeView(),
-
+        // Route Home : userId doit être passé depuis login
+        "/home": (context) => HomeView(userId: "tempUserId"), // <-- temporaire, sera remplacé par l'ID réel
       },
     );
   }

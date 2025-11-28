@@ -1,33 +1,48 @@
-class AuthService {
-  // Méthode de login
-  Future<bool> login(String email, String password) async {
-    await Future.delayed(const Duration(seconds: 1));
-    // Exemple de condition : remplacer par la vraie logique Firebase plus tard
-    if (email == "aziz@gmail.com" && password == "12") {
-      return true;
-    }
-    return false;
-  }
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-  // Méthode de registration
-  Future<bool> register({
+class AuthService {
+  final FirebaseAuth auth = FirebaseAuth.instance;
+  final FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+  Future<bool> registerUser({
     required String nom,
     required String prenom,
     required String telephone,
     required String email,
     required String password,
   }) async {
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      UserCredential userCredential = await auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
 
-    // Exemple de condition : remplacer par la vraie logique Firebase plus tard
-    if (email == "aziz@gmail.com") {
-      // L'utilisateur existe déjà
+      await firestore.collection("users").doc(userCredential.user!.uid).set({
+        "nom": nom,
+        "prenom": prenom,
+        "telephone": telephone,
+        "email": email,
+        "createdAt": DateTime.now(),
+      });
+
+      return true;
+    } catch (e) {
+      print("Erreur register: $e");
       return false;
     }
+  }
 
-    // Ici tu peux ajouter la logique pour créer l'utilisateur
-    // Ex: envoyer les données à Firebase ou API
-
-    return true; // Retourne true si l'inscription réussit
+  Future<bool> loginUser(String email, String password) async {
+    try {
+      await auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      return true;
+    } catch (e) {
+      print("Erreur login: $e");
+      return false;
+    }
   }
 }

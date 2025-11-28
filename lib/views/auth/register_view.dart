@@ -30,13 +30,9 @@ class _RegisterViewState extends State<RegisterView> {
 
     setState(() => isLoading = true);
 
-    bool success = await widget.controller.register(
-      nom: nomController.text,
-      prenom: prenomController.text,
-      telephone: telephoneController.text,
-      email: emailController.text,
-      password: passwordController.text,
-    );
+   bool success = await widget.controller.login(email, password);
+
+
 
     setState(() => isLoading = false);
 

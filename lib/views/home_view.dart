@@ -1,139 +1,168 @@
 import 'package:flutter/material.dart';
-import '../controllers/home_controller.dart';
+import '../controllers/budget_controller.dart';
+import '../services/budget_service.dart';
 
 class HomeView extends StatefulWidget {
-  const HomeView({Key? key}) : super(key: key);
+  final String userId;
+
+  const HomeView({super.key, required this.userId});
 
   @override
   State<HomeView> createState() => _HomeViewState();
 }
 
 class _HomeViewState extends State<HomeView> {
-  final HomeController controller = HomeController();
+  final BudgetController controller = BudgetController(BudgetService());
+  final TextEditingController budgetController = TextEditingController();
+
+  double currentBudget = 0;
+  bool _loading = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBudget();
+  }
+
+  Future<void> _loadBudget() async {
+    try {
+      final budget = await controller.getUserBudget(widget.userId);
+      setState(() {
+        currentBudget = budget;
+        budgetController.text = budget.toString();
+      });
+    } catch (e) {
+      setState(() => _error = "Erreur lors du chargement du budget");
+      print(e);
+    }
+  }
+
+  Future<void> _saveBudget() async {
+    final text = budgetController.text.trim();
+    final amount = double.tryParse(text);
+
+    if (amount == null || amount <= 0) {
+      setState(() => _error = "Montant invalide");
+      return;
+    }
+
+    setState(() => _loading = true);
+    try {
+      await controller.setUserBudget(widget.userId, amount);
+      setState(() {
+        currentBudget = amount;
+        _error = null;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Budget mis à jour !")),
+      );
+    } catch (e) {
+      setState(() => _error = "Erreur lors de l'enregistrement");
+      print(e);
+    } finally {
+      setState(() => _loading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      drawer: Drawer(),
-      appBar: AppBar(
-        title: const Text(
-          "Bonjour, Aziz !",
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        actions: const [
-          CircleAvatar(
-            backgroundImage: AssetImage("assets/profile.jpg"), // optionnel
-          ),
-          SizedBox(width: 10),
-        ],
-      ),
-
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      // MENU À GAUCHE
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
           children: [
-
-            // ---- Solde global ----
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade300),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text("Solde global"),
-                  const SizedBox(height: 8),
-                  Text(
-                    "${controller.getBalance().toStringAsFixed(2)} TND",
-                    style: const TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  )
-                ],
+            const DrawerHeader(
+              decoration: BoxDecoration(color: Colors.blue),
+              child: Text(
+                "Menu",
+                style: TextStyle(color: Colors.white, fontSize: 22),
               ),
             ),
 
-            const SizedBox(height: 20),
-
-            // ---- Activité récente ----
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade300),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "📊 Activité récente :",
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                  const SizedBox(height: 12),
-
-                  ...controller.getRecentTransactions().map((tx) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text("- ${tx.title}"),
-                          Text(
-                            "${tx.amount >= 0 ? "+" : ""}${tx.amount} TND",
-                            style: TextStyle(
-                              color: tx.amount >= 0 ? Colors.green : Colors.red,
-                            ),
+            // === PARTIE MODIFIER LE BUDGET ===
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text("Modifier votre budget",
+                          style: TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: budgetController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          labelText: "Nouveau budget",
+                          border: const OutlineInputBorder(),
+                          suffixIcon: IconButton(
+                            icon: _loading
+                                ? const CircularProgressIndicator()
+                                : const Icon(Icons.check),
+                            onPressed: _loading ? null : _saveBudget,
                           ),
-                        ],
+                        ),
                       ),
-                    );
-                  }),
-                ],
-              ),
-            ),
-
-            const Spacer(),
-
-            // ---- Bouton Ajouter ----
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                      if (_error != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            _error!,
+                            style: const TextStyle(color: Colors.red),
+                          ),
+                        ),
+                    ],
                   ),
-                  backgroundColor: Colors.black,
-                ),
-                onPressed: () {
-                  // future navigation vers page "Ajouter Transaction"
-                },
-                child: const Text(
-                  "Ajouter une Transaction",
-                  style: TextStyle(color: Colors.white),
                 ),
               ),
             ),
-
           ],
         ),
       ),
 
-      bottomNavigationBar: BottomNavigationBar(
-        selectedItemColor: Colors.black,
-        unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: ""),
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: ""),
-          BottomNavigationBarItem(icon: Icon(Icons.swap_horiz), label: ""),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: ""),
-        ],
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 1,
+        iconTheme: const IconThemeData(color: Colors.black),
+        title: const Text("Bonjour Aziz !",
+            style: TextStyle(color: Colors.black)),
+      ),
+
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            // === SOLDE ACTUEL ===
+            Card(
+              elevation: 3,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text("Solde actuel",
+                        style:
+                            TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    Text("$currentBudget TND",
+                        style: const TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
