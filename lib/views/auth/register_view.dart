@@ -21,32 +21,42 @@ class _RegisterViewState extends State<RegisterView> {
   bool isLoading = false;
 
   void handleRegister() async {
-    if (passwordController.text != confirmPasswordController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Les mots de passe ne correspondent pas ❌")),
-      );
-      return;
-    }
+  final email = emailController.text.trim();
+  final password = passwordController.text.trim();
 
-    setState(() => isLoading = true);
-
-   bool success = await widget.controller.login(email, password);
-
-
-
-    setState(() => isLoading = false);
-
-    if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Compte créé avec succès ✔")),
-      );
-      // Navigation vers login
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Erreur lors de l'inscription")),
-      );
-    }
+  if (password != confirmPasswordController.text.trim()) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Les mots de passe ne correspondent pas")),
+    );
+    return;
   }
+
+  setState(() => isLoading = true);
+
+  bool success = await widget.controller.register(
+    nom: nomController.text.trim(),
+    prenom: prenomController.text.trim(),
+    telephone: telephoneController.text.trim(),
+    email: email,
+    password: password,
+  );
+
+  setState(() => isLoading = false);
+
+  if (success) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Compte créé avec succès ✔")),
+    );
+
+    Navigator.pushReplacementNamed(context, "/login");
+
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Erreur lors de l'inscription")),
+    );
+  }
+}
+
 
   @override
   Widget build(BuildContext context) {

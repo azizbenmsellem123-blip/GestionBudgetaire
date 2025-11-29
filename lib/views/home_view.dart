@@ -133,7 +133,7 @@ class _HomeViewState extends State<HomeView> {
         backgroundColor: Colors.white,
         elevation: 1,
         iconTheme: const IconThemeData(color: Colors.black),
-        title: const Text("Bonjour Aziz !",
+        title: const Text("Bonjour Yassine !",
             style: TextStyle(color: Colors.black)),
       ),
 
