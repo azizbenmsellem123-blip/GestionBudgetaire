@@ -10,6 +10,14 @@ import '../views/auth/register_view.dart';
 
 // Home
 import '../views/home_view.dart';
+import 'package:mon_app/views/add_transaction_view.dart';
+import 'package:mon_app/views/edit_transaction_view.dart';
+
+
+
+
+
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,6 +47,15 @@ class MyApp extends StatelessWidget {
         "/register": (context) => RegisterView(controller: authController),
         // Route Home : userId doit être passé depuis login
         "/home": (context) => HomeView(userId: "tempUserId"), // <-- temporaire, sera remplacé par l'ID réel
+        "/addTransaction": (context) => AddTransactionView(),
+        "/editTransaction": (context) {
+  final args = ModalRoute.of(context)!.settings.arguments as Map;
+  return EditTransactionView(
+    userId: args["userId"],
+    transactionId: args["id"],
+    data: args["data"],
+  );
+},
       },
     );
   }

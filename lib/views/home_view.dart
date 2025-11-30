@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../controllers/budget_controller.dart';
 import '../services/budget_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class HomeView extends StatefulWidget {
   final String userId;
@@ -39,8 +40,7 @@ class _HomeViewState extends State<HomeView> {
   }
 
   Future<void> _saveBudget() async {
-    final text = budgetController.text.trim();
-    final amount = double.tryParse(text);
+    final amount = double.tryParse(budgetController.text.trim());
 
     if (amount == null || amount <= 0) {
       setState(() => _error = "Montant invalide");
@@ -48,6 +48,7 @@ class _HomeViewState extends State<HomeView> {
     }
 
     setState(() => _loading = true);
+
     try {
       await controller.setUserBudget(widget.userId, amount);
       setState(() {
@@ -55,11 +56,10 @@ class _HomeViewState extends State<HomeView> {
         _error = null;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Budget mis à jour !")),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text("Budget mis à jour !")));
     } catch (e) {
-      setState(() => _error = "Erreur lors de l'enregistrement");
+      setState(() => _error = "Erreur lors de l’enregistrement");
       print(e);
     } finally {
       setState(() => _loading = false);
@@ -69,7 +69,6 @@ class _HomeViewState extends State<HomeView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // MENU À GAUCHE
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
@@ -82,7 +81,19 @@ class _HomeViewState extends State<HomeView> {
               ),
             ),
 
-            // === PARTIE MODIFIER LE BUDGET ===
+            // 🔵 Ajouter Dépense / Revenu
+            ListTile(
+              leading: const Icon(Icons.add_circle_outline),
+              title: const Text("Ajouter dépense / revenu"),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, "/addTransaction");
+              },
+            ),
+
+            const Divider(),
+
+            // 🟢 Modifier budget
             Padding(
               padding: const EdgeInsets.all(12),
               child: Card(
@@ -140,8 +151,9 @@ class _HomeViewState extends State<HomeView> {
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // === SOLDE ACTUEL ===
+            // 🔵 Solde actuel
             Card(
               elevation: 3,
               shape: RoundedRectangleBorder(
@@ -161,6 +173,111 @@ class _HomeViewState extends State<HomeView> {
                 ),
               ),
             ),
+
+            const SizedBox(height: 25),
+
+            const Text("Vos transactions",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+
+            const SizedBox(height: 10),
+
+            Expanded(
+              child: StreamBuilder(
+                stream: FirebaseFirestore.instance
+                    .collection("users")
+                    .doc(widget.userId)
+                    .collection("transactions")
+                    .orderBy("date", descending: true)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  final docs = snapshot.data!.docs;
+
+                  if (docs.isEmpty) {
+                    return const Center(
+                      child: Text("Aucune transaction pour le moment"),
+                    );
+                  }
+
+                  return ListView.builder(
+                    itemCount: docs.length,
+                    itemBuilder: (context, index) {
+                      final data = docs[index].data();
+                      final amount = data["amount"];
+                      final type = data["type"];
+                      final note = data["note"];
+                      final date = (data["date"] as Timestamp).toDate();
+
+                      return Card(
+                        elevation: 3,
+                        margin: const EdgeInsets.symmetric(vertical: 6),
+                        child: ListTile(
+                          leading: Icon(
+                            type == "revenu"
+                                ? Icons.arrow_downward
+                                : Icons.arrow_upward,
+                            color:
+                                type == "revenu" ? Colors.green : Colors.red,
+                          ),
+
+                          title: Text("$amount TND"),
+                          subtitle: Text(
+                              "$type • ${date.day}/${date.month}/${date.year}"),
+
+                          // ⭐⭐ SUPPRESSION & MODIFICATION ⭐⭐
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(note ?? ""),
+
+                              // 🖊️ Modifier
+                              IconButton(
+                                icon: const Icon(Icons.edit,
+                                    color: Colors.blue),
+                                onPressed: () {
+                                  Navigator.pushNamed(
+                                    context,
+                                    "/editTransaction",
+                                    arguments: {
+                                      "id": docs[index].id,
+                                      "data": data,
+                                      "userId": widget.userId
+                                    },
+                                  );
+                                },
+                              ),
+
+                              // 🗑️ Supprimer
+                              IconButton(
+                                icon: const Icon(Icons.delete,
+                                    color: Colors.red),
+                                onPressed: () async {
+                                  await FirebaseFirestore.instance
+                                      .collection("users")
+                                      .doc(widget.userId)
+                                      .collection("transactions")
+                                      .doc(docs[index].id)
+                                      .delete();
+
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content:
+                                            Text("Transaction supprimée")),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            )
           ],
         ),
       ),
