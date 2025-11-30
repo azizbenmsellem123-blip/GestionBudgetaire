@@ -3,7 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // Inscription
   Future<bool> register({
     required String nom,
     required String prenom,
@@ -16,15 +15,13 @@ class AuthService {
         email: email,
         password: password,
       );
-
       return true;
     } catch (e) {
-      print("Erreur register: $e");
+      print("Erreur register : $e");
       return false;
     }
   }
 
-  // Connexion
   Future<bool> login(String email, String password) async {
     try {
       await _auth.signInWithEmailAndPassword(
@@ -33,8 +30,11 @@ class AuthService {
       );
       return true;
     } catch (e) {
-      print("Erreur login: $e");
+      print("Erreur login : $e");
       return false;
     }
   }
+
+  /// 👇 ICI → getter pour récupérer l'utilisateur Firebase actuel
+  User? get currentUser => _auth.currentUser;
 }

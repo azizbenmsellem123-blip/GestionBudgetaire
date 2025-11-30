@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
 
 class AuthController {
@@ -24,4 +25,6 @@ class AuthController {
   Future<bool> login(String email, String password) {
     return _service.login(email, password);
   }
+
+  User? get currentUser => FirebaseAuth.instance.currentUser;
 }

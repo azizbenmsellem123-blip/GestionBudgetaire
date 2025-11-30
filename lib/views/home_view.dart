@@ -181,103 +181,113 @@ class _HomeViewState extends State<HomeView> {
 
             const SizedBox(height: 10),
 
-            Expanded(
-              child: StreamBuilder(
-                stream: FirebaseFirestore.instance
-                    .collection("users")
-                    .doc(widget.userId)
-                    .collection("transactions")
-                    .orderBy("date", descending: true)
-                    .snapshots(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
+           Expanded(
+  child: StreamBuilder(
+    stream: FirebaseFirestore.instance
+        .collection("users")
+        .doc(widget.userId)
+        .collection("transactions")
+        .orderBy("date", descending: true)
+        .snapshots(),
+    builder: (context, snapshot) {
+      if (!snapshot.hasData) {
+        return const Center(child: CircularProgressIndicator());
+      }
 
-                  final docs = snapshot.data!.docs;
+      final docs = snapshot.data!.docs;
 
-                  if (docs.isEmpty) {
-                    return const Center(
-                      child: Text("Aucune transaction pour le moment"),
-                    );
-                  }
+      if (docs.isEmpty) {
+        return const Center(
+          child: Text("Aucune transaction pour le moment"),
+        );
+      }
 
-                  return ListView.builder(
-                    itemCount: docs.length,
-                    itemBuilder: (context, index) {
-                      final data = docs[index].data();
-                      final amount = data["amount"];
-                      final type = data["type"];
-                      final note = data["note"];
-                      final date = (data["date"] as Timestamp).toDate();
+      return ListView.builder(
+        itemCount: docs.length,
+        itemBuilder: (context, index) {
+          final data = docs[index].data();
+          final amount = data["amount"];
+          final type = data["type"];
+          final note = data["note"];
+          final date = (data["date"] as Timestamp).toDate();
 
-                      return Card(
-                        elevation: 3,
-                        margin: const EdgeInsets.symmetric(vertical: 6),
-                        child: ListTile(
-                          leading: Icon(
-                            type == "revenu"
-                                ? Icons.arrow_downward
-                                : Icons.arrow_upward,
-                            color:
-                                type == "revenu" ? Colors.green : Colors.red,
-                          ),
+          return Card(
+            elevation: 3,
+            margin: const EdgeInsets.symmetric(vertical: 6),
+            child: ListTile(
+              leading: Icon(
+                type == "revenu" ? Icons.arrow_upward : Icons.arrow_downward,
+                color: type == "revenu" ? Colors.green : Colors.red,
+              ),
 
-                          title: Text("$amount TND"),
-                          subtitle: Text(
-                              "$type • ${date.day}/${date.month}/${date.year}"),
+              title: Text("$amount TND"),
+              subtitle: Text("$type • ${date.day}/${date.month}/${date.year}"),
 
-                          // ⭐⭐ SUPPRESSION & MODIFICATION ⭐⭐
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(note ?? ""),
+              // 👉 TRAILING AVEC EDIT + DELETE
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(note ?? ""),
 
-                              // 🖊️ Modifier
-                              IconButton(
-                                icon: const Icon(Icons.edit,
-                                    color: Colors.blue),
-                                onPressed: () {
-                                  Navigator.pushNamed(
-                                    context,
-                                    "/editTransaction",
-                                    arguments: {
-                                      "id": docs[index].id,
-                                      "data": data,
-                                      "userId": widget.userId
-                                    },
-                                  );
-                                },
-                              ),
-
-                              // 🗑️ Supprimer
-                              IconButton(
-                                icon: const Icon(Icons.delete,
-                                    color: Colors.red),
-                                onPressed: () async {
-                                  await FirebaseFirestore.instance
-                                      .collection("users")
-                                      .doc(widget.userId)
-                                      .collection("transactions")
-                                      .doc(docs[index].id)
-                                      .delete();
-
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                        content:
-                                            Text("Transaction supprimée")),
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
+                  // ✏️ Modifier
+                  IconButton(
+                    icon: const Icon(Icons.edit, color: Colors.blue),
+                    onPressed: () {
+                      Navigator.pushNamed(
+                        context,
+                        "/editTransaction",
+                        arguments: {
+                          "id": docs[index].id,
+                          "data": data,
+                          "userId": widget.userId
+                        },
                       );
                     },
-                  );
-                },
+                  ),
+
+                  // 🗑️ Supprimer
+                  IconButton(
+  icon: const Icon(Icons.delete, color: Colors.red),
+  onPressed: () async {
+    final amount = data["amount"];
+    final type = data["type"];
+
+    final userRef = FirebaseFirestore.instance
+        .collection("users")
+        .doc(widget.userId);
+
+    final userDoc = await userRef.get();
+    double currentBudget = userDoc.data()?["budget"] ?? 0;
+
+    // Annuler l’effet de la transaction supprimée
+    if (type == "revenu") {
+      currentBudget -= amount;
+    } else {
+      currentBudget += amount;
+    }
+
+    await userRef.update({"budget": currentBudget});
+
+    // Ensuite supprimer la transaction
+    await FirebaseFirestore.instance
+        .collection("users")
+        .doc(widget.userId)
+        .collection("transactions")
+        .doc(docs[index].id)
+        .delete();
+  },
+)
+
+                ],
               ),
-            )
+            ),
+          );
+        },
+      );
+    },
+  ),
+)
+
           ],
         ),
       ),
