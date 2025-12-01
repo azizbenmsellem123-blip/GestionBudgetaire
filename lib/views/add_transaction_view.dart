@@ -12,7 +12,18 @@ class AddTransactionView extends StatefulWidget {
 class _AddTransactionViewState extends State<AddTransactionView> {
   final amountController = TextEditingController();
   final noteController = TextEditingController();
+
   String type = "dépense";
+  String? selectedCategory = "Autre";
+
+  final List<String> categories = [
+    "Revenu",
+    "Courses",
+    "Transport",
+    "Factures",
+    "Divertissement",
+    "Autre"
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -24,16 +35,14 @@ class _AddTransactionViewState extends State<AddTransactionView> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // Montant
             TextField(
               controller: amountController,
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(labelText: "Montant"),
             ),
 
-            const SizedBox(height: 10),
+            const SizedBox(height: 15),
 
-            // Type : dépense / revenu
             DropdownButton<String>(
               value: type,
               items: const [
@@ -43,47 +52,59 @@ class _AddTransactionViewState extends State<AddTransactionView> {
               onChanged: (value) => setState(() => type = value!),
             ),
 
-            const SizedBox(height: 10),
+            const SizedBox(height: 15),
 
-            // Note optionnelle
-            TextField(
-              controller: noteController,
-              decoration: const InputDecoration(labelText: "Note (optionnel)"),
+            DropdownButtonFormField(
+              decoration: const InputDecoration(labelText: "Catégorie"),
+              value: selectedCategory,
+              items: categories
+                  .map((c) =>
+                      DropdownMenuItem(value: c, child: Text(c)))
+                  .toList(),
+              onChanged: (value) {
+                setState(() {
+                  selectedCategory = value;
+                });
+              },
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 15),
 
-            // BOUTON AJOUTER
+            TextField(
+              controller: noteController,
+              decoration:
+                  const InputDecoration(labelText: "Note (optionnel)"),
+            ),
+
+            const SizedBox(height: 25),
+
             ElevatedButton(
               onPressed: () async {
                 final double? amount =
                     double.tryParse(amountController.text.trim());
                 if (amount == null) return;
 
-                // 🔽 Référence à l'utilisateur
-                final userRef =
-                    FirebaseFirestore.instance.collection("users").doc(userId);
+                final userRef = FirebaseFirestore.instance
+                    .collection("users")
+                    .doc(userId);
 
-                // 🔽 On lit le budget actuel
                 final userDoc = await userRef.get();
                 double currentBudget = userDoc.data()?["budget"] ?? 0;
 
-                // 🔽 Mise à jour automatique du budget
                 if (type == "revenu") {
                   currentBudget += amount;
                 } else {
                   currentBudget -= amount;
                 }
 
-                // 🔽 Enregistrer la transaction
                 await userRef.collection("transactions").add({
                   "amount": amount,
                   "type": type,
+                  "category": selectedCategory,
                   "note": noteController.text.trim(),
                   "date": DateTime.now()
                 });
 
-                // 🔽 Enregistrer le nouveau budget
                 await userRef.update({"budget": currentBudget});
 
                 Navigator.pop(context);

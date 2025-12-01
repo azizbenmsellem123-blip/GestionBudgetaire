@@ -19,65 +19,81 @@ class EditTransactionView extends StatefulWidget {
 
 class _EditTransactionViewState extends State<EditTransactionView> {
   late TextEditingController amountController;
-  late TextEditingController noteController;
-  late String type;
+  late TextEditingController descriptionController;
+  String type = "depense";
 
   @override
   void initState() {
     super.initState();
     amountController =
         TextEditingController(text: widget.data["amount"].toString());
-    noteController =
-        TextEditingController(text: widget.data["note"] ?? "");
+    descriptionController =
+        TextEditingController(text: widget.data["description"] ?? "");
     type = widget.data["type"];
-  }
-
-  Future<void> save() async {
-    await FirebaseFirestore.instance
-        .collection("users")
-        .doc(widget.userId)
-        .collection("transactions")
-        .doc(widget.transactionId)
-        .update({
-      "amount": double.parse(amountController.text),
-      "note": noteController.text,
-      "type": type,
-    });
-
-    Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Modifier transaction")),
+      appBar: AppBar(
+        title: const Text("Modifier la transaction"),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
             TextField(
               controller: amountController,
-              decoration: const InputDecoration(labelText: "Montant"),
               keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: "Montant"),
             ),
-            TextField(
-              controller: noteController,
-              decoration: const InputDecoration(labelText: "Note"),
-            ),
-            const SizedBox(height: 10),
 
-            DropdownButton<String>(
+            const SizedBox(height: 12),
+
+            TextField(
+              controller: descriptionController,
+              decoration: const InputDecoration(labelText: "Description"),
+            ),
+
+            const SizedBox(height: 12),
+
+            DropdownButtonFormField(
               value: type,
+              decoration: const InputDecoration(labelText: "Type"),
               items: const [
-                DropdownMenuItem(value: "revenu", child: Text("Revenu")),
-                DropdownMenuItem(value: "depense", child: Text("Dépense")),
+                DropdownMenuItem(
+                  value: "revenu",
+                  child: Text("Revenu"),
+                ),
+                DropdownMenuItem(
+                  value: "depense",
+                  child: Text("Dépense"),
+                ),
               ],
-              onChanged: (v) => setState(() => type = v!),
+              onChanged: (value) {
+                setState(() {
+                  type = value.toString();
+                });
+              },
             ),
 
             const SizedBox(height: 20),
+
             ElevatedButton(
-              onPressed: save,
+              onPressed: () async {
+                await FirebaseFirestore.instance
+                    .collection("users")
+                    .doc(widget.userId)
+                    .collection("transactions")
+                    .doc(widget.transactionId)
+                    .update({
+                  "amount": double.parse(amountController.text),
+                  "description": descriptionController.text,
+                  "type": type,
+                });
+
+                Navigator.pop(context);
+              },
               child: const Text("Enregistrer"),
             ),
           ],
