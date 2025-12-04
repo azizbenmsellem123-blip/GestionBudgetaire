@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 
+
 class CategoryStatsView extends StatelessWidget {
   final String userId;
 
@@ -11,9 +12,9 @@ class CategoryStatsView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Dépenses par catégorie"),
+        title: const Text("Statistiques par catégorie"),
         backgroundColor: Colors.white,
-        elevation: 0.5,
+        elevation: 1,
         iconTheme: const IconThemeData(color: Colors.black),
       ),
 
@@ -30,79 +31,73 @@ class CategoryStatsView extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
 
-          // 🔵 Regroupement des montants par catégorie
-          Map<String, double> totals = {};
+          final data = snapshot.data!.docs;
 
-          for (var doc in snapshot.data!.docs) {
-            String category = doc["category"] ?? "Autre";
-            double amount = (doc["amount"] ?? 0).toDouble();
-
-            totals[category] = (totals[category] ?? 0) + amount;
-          }
-
-          final categories = totals.keys.toList();
-          final values = totals.values.toList();
-
-          if (categories.isEmpty) {
+          if (data.isEmpty) {
             return const Center(
-              child: Text("Aucune dépense pour le moment."),
+              child: Text("Aucune dépense enregistrée."),
             );
           }
 
+          // ➤ Calcul total par catégorie
+          Map<String, double> categoryTotals = {};
+
+          for (var doc in data) {
+            final map = doc.data() as Map<String, dynamic>;
+            String category = map["category"] ?? "Autre";
+            double amount = (map["amount"] ?? 0).toDouble();
+
+            categoryTotals[category] = (categoryTotals[category] ?? 0) + amount;
+          }
+
+          // ➤ Préparer les données pour le graphique
+          final barSpots = categoryTotals.entries.map((e) {
+            return BarChartGroupData(
+              x: categoryTotals.keys.toList().indexOf(e.key),
+              barRods: [
+                BarChartRodData(
+                  toY: e.value,
+                ),
+              ],
+            );
+          }).toList();
+
           return Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             child: Column(
               children: [
                 const Text(
-                  "Analyse des dépenses",
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  "Graphique des dépenses",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
+
                 const SizedBox(height: 20),
 
-                // 🔥 GRAPH BARRES
                 Expanded(
                   child: BarChart(
                     BarChartData(
-                      alignment: BarChartAlignment.spaceAround,
-                      borderData: FlBorderData(show: false),
+                      barGroups: barSpots,
                       titlesData: FlTitlesData(
                         leftTitles: AxisTitles(
                           sideTitles: SideTitles(showTitles: true),
-                        ),
-                        rightTitles: AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
-                        ),
-                        topTitles: AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
                         ),
                         bottomTitles: AxisTitles(
                           sideTitles: SideTitles(
                             showTitles: true,
                             getTitlesWidget: (value, meta) {
-                              if (value < 0 || value >= categories.length) {
-                                return const SizedBox.shrink();
+                              int index = value.toInt();
+                              if (index < 0 ||
+                                  index >= categoryTotals.keys.length) {
+                                return const SizedBox();
                               }
                               return Text(
-                                categories[value.toInt()],
-                                style: const TextStyle(fontSize: 11),
+                                categoryTotals.keys.elementAt(index),
+                                style: const TextStyle(fontSize: 10),
                               );
                             },
                           ),
                         ),
                       ),
-
-                      barGroups: List.generate(categories.length, (i) {
-                        return BarChartGroupData(
-                          x: i,
-                          barRods: [
-                            BarChartRodData(
-                              toY: values[i],
-                              width: 22,
-                              borderRadius: BorderRadius.circular(6),
-                            )
-                          ],
-                        );
-                      }),
                     ),
                   ),
                 ),

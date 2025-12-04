@@ -4,6 +4,8 @@ import '../services/budget_service.dart';
 import '../controllers/budget_controller.dart';
 import '../views/category_list_view.dart';
 import '../views/objectif_view.dart';
+import '../views/category_stat_view.dart';
+import '../views/profile_view.dart';
 
 
 
@@ -99,7 +101,7 @@ class _HomeViewState extends State<HomeView> {
       },
     ),
     
-    IconButton(
+   IconButton(
   icon: const Icon(Icons.bar_chart),
   onPressed: () {
     Navigator.push(
@@ -110,6 +112,16 @@ class _HomeViewState extends State<HomeView> {
     );
   },
 ),
+IconButton(
+  icon: const Icon(Icons.person),
+  onPressed: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ProfileView()),
+    );
+  },
+),
+
 
   ],
 ),
