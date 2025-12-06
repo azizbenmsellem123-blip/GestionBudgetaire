@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 class LoginView extends StatefulWidget {
   final AuthController controller;
+  
 
   const LoginView({required this.controller, super.key});
 

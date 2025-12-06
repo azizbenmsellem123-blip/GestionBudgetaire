@@ -100,7 +100,8 @@ class _AddTransactionViewState extends State<AddTransactionView> {
                   "type": type,
                   "category": selectedCategory,
                   "note": noteController.text.trim(),
-                  "date": date
+                  "date": date,
+                  "dateId": "${date.year}-${date.month.toString().padLeft(2, '0')}",
                 });
 
                 // -----------------------------------
@@ -108,6 +109,8 @@ class _AddTransactionViewState extends State<AddTransactionView> {
                 // -----------------------------------
                 final String monthId =
                     "${date.year}-${date.month.toString().padLeft(2, '0')}";
+                    
+
 
                 final goalRef = userRef.collection("goals").doc(monthId);
                 final goalDoc = await goalRef.get();

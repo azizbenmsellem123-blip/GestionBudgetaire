@@ -2,110 +2,156 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 
-
-class CategoryStatsView extends StatelessWidget {
+class CategoryStatsView extends StatefulWidget {
   final String userId;
 
   const CategoryStatsView({super.key, required this.userId});
 
   @override
+  State<CategoryStatsView> createState() => _CategoryStatsViewState();
+}
+
+class _CategoryStatsViewState extends State<CategoryStatsView> {
+  String selectedMonth1 = _monthId(DateTime.now());
+  String selectedMonth2 = _monthId(DateTime.now().subtract(const Duration(days: 30)));
+
+  static String _monthId(DateTime date) {
+    return "${date.year}-${date.month.toString().padLeft(2, '0')}";
+  }
+
+  Future<Map<String, double>> _loadMonthData(String monthId) async {
+    final snapshot = await FirebaseFirestore.instance
+        .collection("users")
+        .doc(widget.userId)
+        .collection("transactions")
+        .where("dateId", isEqualTo: monthId)
+        .get();
+
+    Map<String, double> totals = {};
+
+    for (var doc in snapshot.docs) {
+      if (doc["type"] == "dépense") {
+        String cat = doc["category"] ?? "Autre";
+        double amount = (doc["amount"] ?? 0).toDouble();
+
+        totals[cat] = (totals[cat] ?? 0) + amount;
+      }
+    }
+
+    return totals;
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Statistiques par catégorie"),
+        title: const Text("Comparaison des dépenses"),
         backgroundColor: Colors.white,
         elevation: 1,
         iconTheme: const IconThemeData(color: Colors.black),
       ),
 
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection("users")
-            .doc(userId)
-            .collection("transactions")
-            .where("type", isEqualTo: "dépense")
-            .snapshots(),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            const Text(
+              "Comparer deux mois",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
 
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
+            const SizedBox(height: 20),
 
-          final data = snapshot.data!.docs;
-
-          if (data.isEmpty) {
-            return const Center(
-              child: Text("Aucune dépense enregistrée."),
-            );
-          }
-
-          // ➤ Calcul total par catégorie
-          Map<String, double> categoryTotals = {};
-
-          for (var doc in data) {
-            final map = doc.data() as Map<String, dynamic>;
-            String category = map["category"] ?? "Autre";
-            double amount = (map["amount"] ?? 0).toDouble();
-
-            categoryTotals[category] = (categoryTotals[category] ?? 0) + amount;
-          }
-
-          // ➤ Préparer les données pour le graphique
-          final barSpots = categoryTotals.entries.map((e) {
-            return BarChartGroupData(
-              x: categoryTotals.keys.toList().indexOf(e.key),
-              barRods: [
-                BarChartRodData(
-                  toY: e.value,
-                ),
-              ],
-            );
-          }).toList();
-
-          return Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
+            // Sélecteurs des mois
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  "Graphique des dépenses",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
+                _monthDropdown("Mois 1", selectedMonth1, (v) {
+                  setState(() => selectedMonth1 = v!);
+                }),
+                _monthDropdown("Mois 2", selectedMonth2, (v) {
+                  setState(() => selectedMonth2 = v!);
+                }),
+              ],
+            ),
 
-                const SizedBox(height: 20),
+            const SizedBox(height: 25),
 
-                Expanded(
-                  child: BarChart(
+            Expanded(
+              child: FutureBuilder(
+                future: Future.wait([
+                  _loadMonthData(selectedMonth1),
+                  _loadMonthData(selectedMonth2),
+                ]),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  final month1Data = snapshot.data![0];
+                  final month2Data = snapshot.data![1];
+
+                  final allCategories = {
+                    ...month1Data.keys,
+                    ...month2Data.keys,
+                  }.toList();
+
+                  return BarChart(
                     BarChartData(
-                      barGroups: barSpots,
+                      borderData: FlBorderData(show: false),
+                      barGroups: allCategories.map((cat) {
+                        double v1 = month1Data[cat] ?? 0;
+                        double v2 = month2Data[cat] ?? 0;
+
+                        return BarChartGroupData(
+                          x: allCategories.indexOf(cat),
+                          barRods: [
+                            BarChartRodData(toY: v1, color: Colors.blue, width: 12),
+                            BarChartRodData(toY: v2, color: Colors.orange, width: 12),
+                          ],
+                        );
+                      }).toList(),
                       titlesData: FlTitlesData(
-                        leftTitles: AxisTitles(
-                          sideTitles: SideTitles(showTitles: true),
-                        ),
                         bottomTitles: AxisTitles(
                           sideTitles: SideTitles(
                             showTitles: true,
                             getTitlesWidget: (value, meta) {
-                              int index = value.toInt();
-                              if (index < 0 ||
-                                  index >= categoryTotals.keys.length) {
-                                return const SizedBox();
-                              }
-                              return Text(
-                                categoryTotals.keys.elementAt(index),
-                                style: const TextStyle(fontSize: 10),
-                              );
+                              String cat = allCategories[value.toInt()];
+                              return Text(cat, style: const TextStyle(fontSize: 10));
                             },
                           ),
                         ),
                       ),
                     ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
+                  );
+                },
+              ),
+            )
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _monthDropdown(String label, String value, Function(String?) onChanged) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label),
+        const SizedBox(height: 5),
+        DropdownButton<String>(
+          value: value,
+          items: List.generate(12, (i) {
+            final date = DateTime(DateTime.now().year, i + 1);
+            final mid = _monthId(date);
+            return DropdownMenuItem(
+              value: mid,
+              child: Text("${date.month}/${date.year}"),
+            );
+          }),
+          onChanged: onChanged,
+        ),
+      ],
     );
   }
 }

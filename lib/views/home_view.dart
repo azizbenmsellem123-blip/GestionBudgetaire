@@ -11,8 +11,13 @@ import '../views/profile_view.dart';
 
 class HomeView extends StatefulWidget {
   final String userId;
+  final BudgetController controller;   // 👈 OBLIGATOIRE 
 
-  const HomeView({super.key, required this.userId});
+  const HomeView({
+    super.key,
+    required this.userId,
+    required this.controller,   // 👈 OBLIGATOIRE
+  });
 
   @override
   State<HomeView> createState() => _HomeViewState();
@@ -116,9 +121,15 @@ IconButton(
   icon: const Icon(Icons.person),
   onPressed: () {
     Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const ProfileView()),
-    );
+  context,
+  MaterialPageRoute(
+    builder: (_) => ProfileView(
+      userId: widget.userId,
+      controller: widget.controller,   // PASSAGE DU CONTROLLER
+    ),
+  ),
+);
+
   },
 ),
 
@@ -277,6 +288,7 @@ IconButton(
                               "userId": widget.userId
                             });
                       },
+
                     ),
                     IconButton(
                       icon: const Icon(Icons.delete, color: Colors.red),
