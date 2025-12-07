@@ -121,17 +121,16 @@ IconButton(
   icon: const Icon(Icons.person),
   onPressed: () {
     Navigator.push(
-  context,
-  MaterialPageRoute(
-    builder: (_) => ProfileView(
-      userId: widget.userId,
-      controller: widget.controller,   // PASSAGE DU CONTROLLER
-    ),
-  ),
-);
-
+      context,
+      MaterialPageRoute(
+        builder: (_) => ProfileView(
+          userId: widget.userId,
+        ),
+      ),
+    );
   },
 ),
+
 
 
   ],

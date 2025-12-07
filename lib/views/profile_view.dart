@@ -2,6 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:mon_app/views/auth/login_view.dart';
+import 'package:mon_app/controllers/auth_controller.dart';
+import '../services/auth_service.dart';
+
 
 
 class ProfileView extends StatefulWidget {
@@ -137,15 +140,22 @@ class _ProfileViewState extends State<ProfileView> {
       await FirebaseAuth.instance.signOut();
 
       Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => const LoginView()),
-        (route) => false, // supprime toutes les pages précédentes
-      );
+  context,
+  MaterialPageRoute(
+    builder: (_) => LoginView(
+      controller: AuthController(AuthService()),
+    ),
+  ),
+  (route) => false,
+);
+
     },
     style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
     child: const Text("Se déconnecter"),
   ),
 )
+
+
 
               ],
             ),

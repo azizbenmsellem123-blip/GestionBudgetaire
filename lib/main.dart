@@ -12,6 +12,9 @@ import '../views/auth/register_view.dart';
 import '../views/home_view.dart';
 import 'package:mon_app/views/add_transaction_view.dart';
 import 'package:mon_app/views/edit_transaction_view.dart';
+import 'package:mon_app/controllers/budget_controller.dart';
+import 'package:mon_app/services/budget_service.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -42,9 +45,14 @@ class MyApp extends StatelessWidget {
 
         // 🔥 Route Home — maintenant correcte
         "/home": (context) {
-          final userId = ModalRoute.of(context)!.settings.arguments as String;
-          return HomeView(userId: userId);
-        },
+  final userId = ModalRoute.of(context)!.settings.arguments as String;
+
+  return HomeView(
+    userId: userId,
+    controller: BudgetController(BudgetService()),
+  );
+},
+
 
         "/addTransaction": (context) => AddTransactionView(),
 
