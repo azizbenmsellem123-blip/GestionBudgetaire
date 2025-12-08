@@ -9,25 +9,25 @@ class CategoryListView extends StatelessWidget {
 
   // Liste des catégories par défaut
   final List<String> categories = const [
-    "Revenu",
-    "Courses",
-    "Transport",
-    "Factures",
-    "Divertissement",
-    "Autre"
+    "revenu",
+    "courses",
+    "transport",
+    "factures",
+    "divertissement",
+    "autre"
   ];
 
   IconData getCategoryIcon(String category) {
     switch (category) {
-      case "Revenu":
+      case "revenu":
         return Icons.attach_money;
-      case "Courses":
+      case "courses":
         return Icons.shopping_cart;
-      case "Transport":
+      case "transport":
         return Icons.directions_car;
-      case "Factures":
+      case "factures":
         return Icons.receipt_long;
-      case "Divertissement":
+      case "divertissement":
         return Icons.movie;
       default:
         return Icons.category;

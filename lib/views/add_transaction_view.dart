@@ -13,7 +13,7 @@ class _AddTransactionViewState extends State<AddTransactionView> {
   final amountController = TextEditingController();
   final noteController = TextEditingController();
 
-  String type = "dépense";
+  String type = "depense";
   String? selectedCategory = "Autre";
 
   final List<String> categories = [
@@ -48,7 +48,7 @@ class _AddTransactionViewState extends State<AddTransactionView> {
             DropdownButton<String>(
               value: type,
               items: const [
-                DropdownMenuItem(value: "dépense", child: Text("Dépense")),
+                DropdownMenuItem(value: "depense", child: Text("Depense")),
                 DropdownMenuItem(value: "revenu", child: Text("Revenu")),
               ],
               onChanged: (value) => setState(() => type = value!),
@@ -119,7 +119,7 @@ class _AddTransactionViewState extends State<AddTransactionView> {
                 double spent = goalDoc.data()?["spent"] ?? 0;
 
                 // 🔵 Si dépense → l'ajouter aux dépenses du mois
-                if (type == "dépense") {
+                if (type == "depense") {
                   double newSpent = spent + amount;
                   double remaining = goalAmount - newSpent;
 

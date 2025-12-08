@@ -62,12 +62,12 @@ class _EditTransactionViewState extends State<EditTransactionView> {
               decoration: const InputDecoration(labelText: "Type"),
               items: const [
                 DropdownMenuItem(
-                  value: "revenu",
+                  value: "Revenu",
                   child: Text("Revenu"),
                 ),
                 DropdownMenuItem(
-                  value: "depense",
-                  child: Text("Dépense"),
+                  value: "Depense",
+                  child: Text("dépense"),
                 ),
               ],
               onChanged: (value) {
