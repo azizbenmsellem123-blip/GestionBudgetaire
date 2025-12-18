@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+import 'package:intl/date_symbol_data_local.dart'; // AJOUTE CET IMPORT
 
 // Auth
 import '../controllers/auth_controller.dart';
@@ -18,6 +19,10 @@ import 'package:mon_app/services/budget_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // AJOUTE CETTE LIGNE : Initialisation des locales pour le français
+  await initializeDateFormatting('fr_FR', null);
+  
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -45,14 +50,12 @@ class MyApp extends StatelessWidget {
 
         // 🔥 Route Home — maintenant correcte
         "/home": (context) {
-  final userId = ModalRoute.of(context)!.settings.arguments as String;
+          final userId = ModalRoute.of(context)!.settings.arguments as String;
 
-  return HomeView(
-    userId: userId,
-    controller: BudgetController(BudgetService()),
-  );
-},
-
+          return HomeView(
+            userId: userId,
+          );
+        },
 
         "/addTransaction": (context) => AddTransactionView(),
 

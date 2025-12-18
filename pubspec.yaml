@@ -38,6 +38,8 @@ dependencies:
   cloud_firestore: ^6.1.0
   firebase_auth: ^6.1.2
   fl_chart: ^1.1.1
+  intl: ^0.20.2
+  syncfusion_flutter_gauges: ^31.2.18
 
 dev_dependencies:
   flutter_test:
